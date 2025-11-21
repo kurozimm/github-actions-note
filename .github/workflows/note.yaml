@@ -67,15 +67,12 @@ steps:
         with:
           node-version: '20'
           
-      - name: Initialize Node Project
-        run: npm init -y
-
-      - name: Install Claude Code SDK (Forced & Clean) # ★ ステップ名変更
+      - name: Initialize Node Project and Install Dependencies
         run: |
-          rm -f package-lock.json
-          rm -rf node_modules
-          npm install @anthropic-ai/claude-code --save --force || (echo "NPM INSTALL FAILED" && exit 1)
-          ls -R node_modules
+          npm init -y
+          npm install @anthropic-ai/claude-code
+          echo "--- Listing contents of node_modules/@anthropic-ai/claude-code ---"
+          ls -R node_modules/@anthropic-ai/claude-code
           
       - name: Research with Claude Code SDK
         run: |
