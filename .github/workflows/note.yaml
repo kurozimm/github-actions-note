@@ -91,7 +91,7 @@ jobs:
             ].join('\n');
             const userPrompt = `以下のテーマとターゲットに対する最終版のリサーチレポートを作成してください。\n【重要】途中経過や確認質問は一切せず、最終レポートのみを返してください。不明点がある場合は「前提と仮定」セクションで簡潔に仮定を明記してから続行してください。\n---\nテーマ: ${theme}\nターゲット: ${target}\n現在日付: ${today}`;
             const messages = [];
-            for await (const msg of query({ # <- ここで安全に await が使えるようになる
+            for await (const msg of query({
               prompt: userPrompt,
               options: {
                 customSystemPrompt: sys,
@@ -117,7 +117,7 @@ jobs:
           echo "$b64" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Upload research artifacts # ★ 重複を解消し、正しい実行内容のみを維持
+      - name: Upload research artifacts
         uses: actions/upload-artifact@v4
         with:
           name: research-artifacts
