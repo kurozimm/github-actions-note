@@ -55,7 +55,7 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       THEME: ${{ github.event.inputs.theme }}
       TARGET: ${{ github.event.inputs.target }}
-      NODE_PATH: ./node_modules
+      NODE_PATH: ${{ github.workspace }}/node_modules
     outputs:
       research_b64: ${{ steps.collect.outputs.research_b64 }}
     steps:
