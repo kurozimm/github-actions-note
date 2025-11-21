@@ -48,13 +48,13 @@ env:
   TZ: Asia/Tokyo
 
 jobs:
-   research:
-     env:
+  research:
+    env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       THEME: ${{ github.event.inputs.theme }}
       TARGET: ${{ github.event.inputs.target }}
 
-     steps:
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -65,15 +65,51 @@ jobs:
 
       - name: Research with Claude Code SDK (Integrated Run)
         run: |
+          # シェルコマンド（インデントは 'run:' の直後と同じレベルに揃える）
           rm -rf node_modules
           rm -f package-lock.json package.json
           npm init -y
           npm install @anthropic-ai/claude-code --force
           echo "Installation check (should list files):"
-          ls -R node_modules/@anthropic-ai/claude-code || (echo "ERROR: Module directory not found after install." && exit 1) 
+          ls -R node_modules/@anthropic-ai/claude-code || (echo "ERROR: Module directory not found after install." && exit 1)
+          
+          # JavaScript スクリプトの作成
           cat > research.js <<'EOF'
+          const { query } = require('@anthropic-ai/claude-code');
+          const fs = require('fs');
+          (async () => {
+          const theme = process.env.THEME || '';
+          const target = process.env.TARGET || '';
+          const today = new Date().toISOString().slice(0,10);
+          const artifactsDir = '.note-artifacts';
+          fs.mkdirSync(artifactsDir, { recursive: true });
+          const sys = [
+          'あなたは最新情報の収集と要約に特化した超一流のリサーチャーです。',
+          '事実ベース・一次情報優先・本文内にMarkdownリンクで出典を埋め込むこと。',
+          '十分な分量（目安: 2,000語以上）。各節で出典を本文に埋め込む。',
+          'WebSearch と WebFetch を必ず使用し、一次情報（公的機関・規格・論文・公式）を優先する。',
+          ].join('\n');
+          const userPrompt = `以下のテーマとターゲットに対する最終版のリサーチレポートを作成してください。\n【重要】途中経過や確認質問は一切せず、最終レポートのみを返してください。不明点がある場合は「前提と仮定」セクションで簡潔に仮定を明記してから続行してください。\n---\nテーマ: ${theme}\nターゲット: ${target}\n現在日付: ${today}`;
+          const messages = [];
+          for await (const msg of query({
+          prompt: userPrompt,
+          options: {
+          customSystemPrompt: sys,
+          allowedTools: ['WebSearch','WebFetch'],
+          permissionMode: 'acceptEdits',
+          },
+          })) { messages.push(msg); }
+          const assistantTexts = messages.filter(m=>m.type==='assistant').map(m=>{
+          const c=m.message?.content; 
+          if(Array.isArray(c)){
+          return c.filter(b=>b?.type==='text').map(b=>b.text).join('\n');
+          } 
+          return '';
+          }).filter(Boolean).join('\n\n');
+          fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
+          try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
+          })();
           EOF
-      
           node research.js
           
       - name: Collect research
@@ -92,7 +128,7 @@ jobs:
             .note-artifacts/research.md
             .note-artifacts/research_trace.json
             
-   write:
+  write:
     name: Write (Claude Sonnet 4.0)
     needs: research
     runs-on: ubuntu-latest
@@ -184,7 +220,7 @@ jobs:
           name: draft-artifact
           path: .note-artifacts/draft.json
 
-   factcheck:
+  factcheck:
     name: Fact-check (Tavily)
     needs: write
     runs-on: ubuntu-latest
@@ -328,7 +364,7 @@ jobs:
           echo "final_b64<<EOF" >> $GITHUB_OUTPUT
           echo "$b64" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-    post:
+  post:
      name: Post to note.com (Playwright)
      needs: factcheck
      if: ${{ github.event.inputs.dry_run != 'true' }}
