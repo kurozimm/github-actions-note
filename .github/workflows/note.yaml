@@ -68,15 +68,12 @@ jobs:
           
       - name: Initialize Node Project
         run: npm init -y
-
-      - name: Install Claude Code SDK
-        run: npm install @anthropic-ai/claude-code --save # ★ 確実なインストール
-        
+      
       - name: Research with Claude Code SDK
         run: |
-          cat > research.js <<'EOF' # ★ ファイル名を .js に変更
-          const { query } = require('@anthropic-ai/claude-code'); # ★ require()構文に変更
-          const fs = require('fs'); # ★ require()構文に変更
+          cat > research.js <<'EOF'
+          const { query } = require('@anthropic-ai/claude-code');
+          const fs = require('fs');
           
           const theme = process.env.THEME || '';
           const target = process.env.TARGET || '';
@@ -105,9 +102,9 @@ jobs:
           fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
           try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
           EOF
-          node research.js # ★ フラグと .mjs を削除し、シンプルに実行
+          node research.js
           
-      - name: Collect research # ★ 重複を解消し、正しい実行内容のみを維持
+      - name: Collect research
         id: collect
         run: |
           b64=$(base64 -w 0 .note-artifacts/research.md 2>/dev/null || base64 .note-artifacts/research.md)
