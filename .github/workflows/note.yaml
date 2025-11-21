@@ -55,6 +55,7 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       THEME: ${{ github.event.inputs.theme }}
       TARGET: ${{ github.event.inputs.target }}
+      NODE_PATH: ./node_modules
     outputs:
       research_b64: ${{ steps.collect.outputs.research_b64 }}
     steps:
@@ -71,7 +72,7 @@ jobs:
 
       - name: Install Claude Code SDK
         run: npm install @anthropic-ai/claude-code --save
-      
+        
       - name: Research with Claude Code SDK
         run: |
           cat > research.js <<'EOF'
@@ -106,11 +107,11 @@ jobs:
             }).filter(Boolean).join('\n\n');
             fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
             try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
-
+          
           })();
           EOF
 
-          NODE_PATH=./node_modules node research.js
+          node research.js
           
       - name: Collect research
         id: collect
