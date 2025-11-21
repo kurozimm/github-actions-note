@@ -49,8 +49,6 @@ env:
 
 jobs:
   research:
-    name: Research (CCSDK WebSearch/WebFetch)
-    runs-on: ubuntu-latest
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       THEME: ${{ github.event.inputs.theme }}
@@ -66,8 +64,8 @@ steps:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
-      - name: Initialize Node Project and Install Dependencies
+
+      - name: Initialize Project and Install SDK
         run: |
           npm init -y
           npm install @anthropic-ai/claude-code
