@@ -57,7 +57,7 @@ jobs:
       TARGET: ${{ github.event.inputs.target }}
     outputs:
       research_b64: ${{ steps.collect.outputs.research_b64 }}
-steps:
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -71,12 +71,13 @@ steps:
 
       - name: Install Claude Code SDK
         run: npm install @anthropic-ai/claude-code --save # ★ 確実なインストール
-
+        
       - name: Research with Claude Code SDK
         run: |
-          cat > research.mjs <<'EOF'
-          import { query } from '@anthropic-ai/claude-code';
-          import fs from 'fs';
+          cat > research.js <<'EOF' # ★ ファイル名を .js に変更
+          const { query } = require('@anthropic-ai/claude-code'); # ★ require()構文に変更
+          const fs = require('fs'); # ★ require()構文に変更
+          
           const theme = process.env.THEME || '';
           const target = process.env.TARGET || '';
           const today = new Date().toISOString().slice(0,10);
@@ -99,12 +100,12 @@ steps:
             },
           })) { messages.push(msg); }
           const assistantTexts = messages.filter(m=>m.type==='assistant').map(m=>{
-            const c=m.message?.content; if(Array.isArray(c)){return c.filter(b=>b?.type==='text').map(b=>b.text).join('\n');} return ''; # ★ タイポ(b->b.text)を修正
+            const c=m.message?.content; if(Array.isArray(c)){return c.filter(b=>b?.type==='text').map(b=>b.text).join('\n');} return '';
           }).filter(Boolean).join('\n\n');
           fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
           try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
           EOF
-          node --experimental-specifier-resolution=node research.mjs # ★ モジュール解決フラグ付き実行
+          node research.js # ★ フラグと .mjs を削除し、シンプルに実行
           
       - name: Collect research # ★ 重複を解消し、正しい実行内容のみを維持
         id: collect
@@ -122,7 +123,7 @@ steps:
             .note-artifacts/research.md
             .note-artifacts/research_trace.json
             
-write:
+  write:
     name: Write (Claude Sonnet 4.0)
     needs: research
     runs-on: ubuntu-latest
@@ -214,7 +215,7 @@ write:
           name: draft-artifact
           path: .note-artifacts/draft.json
 
-factcheck:
+  factcheck:
     name: Fact-check (Tavily)
     needs: write
     runs-on: ubuntu-latest
@@ -359,7 +360,7 @@ factcheck:
           echo "$b64" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
   
-    post:
+  post:
      name: Post to note.com (Playwright)
      needs: factcheck
      if: ${{ github.event.inputs.dry_run != 'true' }}
