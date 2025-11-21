@@ -48,13 +48,13 @@ env:
   TZ: Asia/Tokyo
 
 jobs:
-research:
-    env:
+   research:
+     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       THEME: ${{ github.event.inputs.theme }}
       TARGET: ${{ github.event.inputs.target }}
 
-    steps:
+     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -92,7 +92,7 @@ research:
             .note-artifacts/research.md
             .note-artifacts/research_trace.json
             
-write:
+   write:
     name: Write (Claude Sonnet 4.0)
     needs: research
     runs-on: ubuntu-latest
@@ -184,7 +184,7 @@ write:
           name: draft-artifact
           path: .note-artifacts/draft.json
 
-factcheck:
+   factcheck:
     name: Fact-check (Tavily)
     needs: write
     runs-on: ubuntu-latest
