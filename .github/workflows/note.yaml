@@ -65,7 +65,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Initialize Node Project
+    　　   run: npm init -y 
+         
+      - name: Install Claude Code SDK
+         run: npm install @anthropic-ai/claude-code
 
+      - name: Research with Claude Code SDK
+        run: |
+          cat > research.mjs <<'EOF'
+          # ... (research.mjsのコード全体を貼り付け)
+          # ...
+          EOF
+          
       - name: Install Claude Code SDK
         # 不要な「npm init -y」や「NODE_PATH設定」を削除し、インストールのみを行う
         run: npm install @anthropic-ai/claude-code
