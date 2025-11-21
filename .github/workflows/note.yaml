@@ -65,15 +65,22 @@ jobs:
 
       - name: Research with Claude Code SDK (Integrated Run)
         run: |
-          # シェルコマンド（インデントは 'run:' の直後と同じレベルに揃える）
+          # 1. 環境変数の最終チェック（重要）
+          echo "--- CHECKING ENVIRONMENT PATHS ---"
+          env | grep NODE_PATH || echo "NODE_PATH is successfully unset."
+          echo "--- END CHECK ---"
+          
+          # 2. 依存関係のクリーンアップとインストール
           rm -rf node_modules
           rm -f package-lock.json package.json
           npm init -y
           npm install @anthropic-ai/claude-code --force
+          
+          # 3. インストールチェック (失敗すれば即座に終了)
           echo "Installation check (should list files):"
           ls -R node_modules/@anthropic-ai/claude-code || (echo "ERROR: Module directory not found after install." && exit 1)
           
-          # JavaScript スクリプトの作成
+          # 4. JavaScript スクリプトの作成
           cat > research.js <<'EOF'
           const { query } = require('@anthropic-ai/claude-code');
           const fs = require('fs');
@@ -110,6 +117,8 @@ jobs:
           try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
           })();
           EOF
+          
+          # 5. スクリプトの実行
           node research.js
           
       - name: Collect research
