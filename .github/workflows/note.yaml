@@ -104,7 +104,7 @@ jobs:
           fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
           try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
           EOF
-          node research.mjs
+          node --experimental-specifier-resolution=node research.mjs
 
       - name: Collect research
         id: collect
