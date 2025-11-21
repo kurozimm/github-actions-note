@@ -78,32 +78,35 @@ jobs:
           const { query } = require('@anthropic-ai/claude-code');
           const fs = require('fs');
           
-          const theme = process.env.THEME || '';
-          const target = process.env.TARGET || '';
-          const today = new Date().toISOString().slice(0,10);
-          const artifactsDir = '.note-artifacts';
-          fs.mkdirSync(artifactsDir, { recursive: true });
-          const sys = [
-          'あなたは最新情報の収集と要約に特化した超一流のリサーチャーです。',
-          '事実ベース・一次情報優先・本文内にMarkdownリンクで出典を埋め込むこと。',
-          '十分な分量（目安: 2,000語以上）。各節で出典を本文に埋め込む。',
-          'WebSearch と WebFetch を必ず使用し、一次情報（公的機関・規格・論文・公式）を優先する。',
-          ].join('\n');
-          const userPrompt = `以下のテーマとターゲットに対する最終版のリサーチレポートを作成してください。\n【重要】途中経過や確認質問は一切せず、最終レポートのみを返してください。不明点がある場合は「前提と仮定」セクションで簡潔に仮定を明記してから続行してください。事実ベースで一次情報を最優先し、本文にMarkdownリンクで出典を埋め込んでください。\n---\nテーマ: ${theme}\nターゲット: ${target}\n現在日付: ${today}`;
-          const messages = [];
-          for await (const msg of query({
-            prompt: userPrompt,
-            options: {
-              customSystemPrompt: sys,
-              allowedTools: ['WebSearch','WebFetch'],
-              permissionMode: 'acceptEdits',
-            },
-          })) { messages.push(msg); }
-          const assistantTexts = messages.filter(m=>m.type==='assistant').map(m=>{
-            const c=m.message?.content; if(Array.isArray(c)){return c.filter(b=>b?.type==='text').map(b=>b.text).join('\n');} return '';
-          }).filter(Boolean).join('\n\n');
-          fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
-          try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
+          (async () => {
+
+            const theme = process.env.THEME || '';
+            const target = process.env.TARGET || '';
+            const today = new Date().toISOString().slice(0,10);
+            const artifactsDir = '.note-artifacts';
+            fs.mkdirSync(artifactsDir, { recursive: true });
+            const sys = [
+            'あなたは最新情報の収集と要約に特化した超一流のリサーチャーです。',
+            # ... (中略：既存のコードをそのまま配置)
+            'WebSearch と WebFetch を必ず使用し、一次情報（公的機関・規格・論文・公式）を優先する。',
+            ].join('\n');
+            const userPrompt = `以下のテーマとターゲットに対する最終版のリサーチレポートを作成してください。\n【重要】途中経過や確認質問は一切せず、最終レポートのみを返してください。不明点がある場合は「前提と仮定」セクションで簡潔に仮定を明記してから続行してください。\n---\nテーマ: ${theme}\nターゲット: ${target}\n現在日付: ${today}`;
+            const messages = [];
+            for await (const msg of query({ # <- ここで安全に await が使えるようになる
+              prompt: userPrompt,
+              options: {
+                customSystemPrompt: sys,
+                allowedTools: ['WebSearch','WebFetch'],
+                permissionMode: 'acceptEdits',
+              },
+            })) { messages.push(msg); }
+            const assistantTexts = messages.filter(m=>m.type==='assistant').map(m=>{
+              const c=m.message?.content; if(Array.isArray(c)){return c.filter(b=>b?.type==='text').map(b=>b.text).join('\n');} return '';
+            }).filter(Boolean).join('\n\n');
+            fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
+            try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
+
+          })();
           EOF
           node research.js
           
