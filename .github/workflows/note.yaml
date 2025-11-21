@@ -48,15 +48,13 @@ env:
   TZ: Asia/Tokyo
 
 jobs:
-  research:
+research:
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       THEME: ${{ github.event.inputs.theme }}
       TARGET: ${{ github.event.inputs.target }}
-      NODE_PATH: ${{ github.workspace }}/node_modules
-    outputs:
-      research_b64: ${{ steps.collect.outputs.research_b64 }}
-steps:
+
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -65,15 +63,16 @@ steps:
         with:
           node-version: '20'
 
-      - name: Initialize Project and Install SDK
+      - name: Research with Claude Code SDK (Integrated Run) 
         run: |
+          rm -rf node_modules
+          rm -f package-lock.json package.json
           npm init -y
           npm install @anthropic-ai/claude-code
-          echo "--- Listing contents of node_modules/@anthropic-ai/claude-code ---"
+
+          echo "Installation check (should list files):"
           ls -R node_modules/@anthropic-ai/claude-code
           
-      - name: Research with Claude Code SDK
-        run: |
           cat > research.js <<'EOF'
           const { query } = require('@anthropic-ai/claude-code');
           const fs = require('fs');
@@ -109,6 +108,7 @@ steps:
           
           })();
           EOF
+          
           node research.js
           
       - name: Collect research
@@ -127,7 +127,7 @@ steps:
             .note-artifacts/research.md
             .note-artifacts/research_trace.json
             
-  write:
+write:
     name: Write (Claude Sonnet 4.0)
     needs: research
     runs-on: ubuntu-latest
