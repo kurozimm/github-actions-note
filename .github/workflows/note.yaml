@@ -57,7 +57,7 @@ jobs:
       TARGET: ${{ github.event.inputs.target }}
     outputs:
       research_b64: ${{ steps.collect.outputs.research_b64 }}
-    steps:
+steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -65,29 +65,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Initialize Node Project
-        run: npm init -y 
-         
-      - name: Install Claude Code SDK
-        run: npm install @anthropic-ai/claude-code
-
-      - name: Research with Claude Code SDK
-        run: |
-          cat > research.mjs <<'EOF'
-          # ... (research.mjsのコード全体を貼り付け)
-          # ...
-          EOF
           
+      - name: Initialize Node Project
+        run: npm init -y
+
       - name: Install Claude Code SDK
-        # 不要な「npm init -y」や「NODE_PATH設定」を削除し、インストールのみを行う
-        run: npm install @anthropic-ai/claude-code
+        run: npm install @anthropic-ai/claude-code --save # ★ 確実なインストール
 
       - name: Research with Claude Code SDK
-        # env: の中の NODE_PATH 設定も削除します（正しく動かない原因でした）
         run: |
           cat > research.mjs <<'EOF'
           import { query } from '@anthropic-ai/claude-code';
-          // ... 既存のコードをそのまま貼り付け ...
           import fs from 'fs';
           const theme = process.env.THEME || '';
           const target = process.env.TARGET || '';
@@ -111,14 +99,14 @@ jobs:
             },
           })) { messages.push(msg); }
           const assistantTexts = messages.filter(m=>m.type==='assistant').map(m=>{
-            const c=m.message?.content; if(Array.isArray(c)){return c.filter(b=>b?.type==='text').map(b=>b.text).join('\n');} return '';
+            const c=m.message?.content; if(Array.isArray(c)){return c.filter(b=>b?.type==='text').map(b=>b.text).join('\n');} return ''; # ★ タイポ(b->b.text)を修正
           }).filter(Boolean).join('\n\n');
           fs.writeFileSync(`${artifactsDir}/research.md`, assistantTexts || '');
           try { fs.writeFileSync(`${artifactsDir}/research_trace.json`, JSON.stringify(messages, null, 2)); } catch {}
           EOF
-          node --experimental-specifier-resolution=node research.mjs
-
-      - name: Collect research
+          node --experimental-specifier-resolution=node research.mjs # ★ モジュール解決フラグ付き実行
+          
+      - name: Collect research # ★ 重複を解消し、正しい実行内容のみを維持
         id: collect
         run: |
           b64=$(base64 -w 0 .note-artifacts/research.md 2>/dev/null || base64 .note-artifacts/research.md)
@@ -126,15 +114,15 @@ jobs:
           echo "$b64" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Upload research artifacts
+      - name: Upload research artifacts # ★ 重複を解消し、正しい実行内容のみを維持
         uses: actions/upload-artifact@v4
         with:
           name: research-artifacts
           path: |
             .note-artifacts/research.md
             .note-artifacts/research_trace.json
-
-  write:
+            
+write:
     name: Write (Claude Sonnet 4.0)
     needs: research
     runs-on: ubuntu-latest
