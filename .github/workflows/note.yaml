@@ -58,7 +58,7 @@ jobs:
       NODE_PATH: ${{ github.workspace }}/node_modules
     outputs:
       research_b64: ${{ steps.collect.outputs.research_b64 }}
-    steps:
+steps:
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -70,9 +70,13 @@ jobs:
       - name: Initialize Node Project
         run: npm init -y
 
-      - name: Install Claude Code SDK
-        run: npm install @anthropic-ai/claude-code --save
-        
+      - name: Install Claude Code SDK (Forced & Clean) # ★ ステップ名変更
+        run: |
+          rm -f package-lock.json
+          rm -rf node_modules
+          npm install @anthropic-ai/claude-code --save --force || (echo "NPM INSTALL FAILED" && exit 1)
+          ls -R node_modules
+          
       - name: Research with Claude Code SDK
         run: |
           cat > research.js <<'EOF'
@@ -89,7 +93,7 @@ jobs:
             const sys = [
             'あなたは最新情報の収集と要約に特化した超一流のリサーチャーです。',
             '事実ベース・一次情報優先・本文内にMarkdownリンクで出典を埋め込むこと。',
-            '十分な分量（目安: 2,000語以上）。各節で出典を本文に埋め込む。',
+            '十分な分量（目安: 2,000語以上）。各節で出典を本文に埋め込むこと。',
             'WebSearch と WebFetch を必ず使用し、一次情報（公的機関・規格・論文・公式）を優先する。',
             ].join('\n');
             const userPrompt = `以下のテーマとターゲットに対する最終版のリサーチレポートを作成してください。\n【重要】途中経過や確認質問は一切せず、最終レポートのみを返してください。不明点がある場合は「前提と仮定」セクションで簡潔に仮定を明記してから続行してください。\n---\nテーマ: ${theme}\nターゲット: ${target}\n現在日付: ${today}`;
@@ -110,7 +114,6 @@ jobs:
           
           })();
           EOF
-
           node research.js
           
       - name: Collect research
@@ -424,7 +427,6 @@ jobs:
           TAGS: ${{ steps.draft.outputs.TAGS }}
           STATE_PATH: ${{ steps.state.outputs.STATE_PATH }}
         run: |
-          # 本文は後続スクリプト内でMarkdownリンク→素URL化などの前処理を行う
           cat > post.mjs <<'EOF'
           import { chromium } from 'playwright';
           import { marked } from 'marked';
